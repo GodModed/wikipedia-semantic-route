@@ -13,7 +13,6 @@ ollama pull embeddinggemma:300m
 ```
 
 Run
-- Set currentPage and endPage in index.ts to your start and end wikipedia article titles.
 ```bash
 bun run index.ts
 ```

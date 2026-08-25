@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@inquirer/input": "^5.1.3",
     "ollama": "^0.6.3",
     "wikipedia": "^2.5.0"
   }

@@ -1,6 +1,7 @@
 import wiki, { summaryError } from "wikipedia";
 import ollama from "ollama";
-import { embeddedFiles, sleep } from "bun";
+import input from '@inquirer/input';
+import { sleep } from "bun";
 
 
 type Page = {
@@ -11,14 +12,21 @@ type Page = {
 
 const pageCache = new Map<string, Page>();
 
-let currentPage = 'Winter Olympic Games';
-const endPage = 'Humanism';
+const startingPage = await getUserInputPage("Starting Wikipedia page");
+const endPage = await getUserInputPage("Ending Wikipedia page");
+
+let currentPage = startingPage;
+let steps = 0;
 
 while (currentPage != endPage) {
+    steps++;
     const links = await wiki.links(currentPage);
-    console.log(currentPage, " - ", links.length, "links");
+    let currentPageIdx = 0;
     const pages: string[] = [];
     for (const link of links) {
+        currentPageIdx++;
+        process.stdout.write(`${currentPage} - ${currentPageIdx}/${links.length} links\r`);
+
         try {
             await getPage(link);
             pages.push(link);
@@ -30,6 +38,8 @@ while (currentPage != endPage) {
         }
         await sleep(100);
     }
+
+    console.log();
 
     let bestName: string = "";
     let bestScore = -1;
@@ -47,6 +57,8 @@ while (currentPage != endPage) {
     console.log(bestName, "won the bet with a score of", bestScore);
     currentPage = bestName;
 }
+
+console.log(`${startingPage} -> ${endPage} in ${steps} steps`);
 
 async function getPage(name: string): Promise<Page> {
 
@@ -78,4 +90,16 @@ function cosineSimilarity(a: number[], b: number[]) {
     }
 
     return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+async function getUserInputPage(message: string): Promise<string> {
+    const page = await input({ message });
+    const searchResults = await wiki.search(page);
+    if (!searchResults.results.length) {
+        console.log("Could not find page", message);
+        process.exit(1);
+    }
+    const topSearch = searchResults.results[0]!;
+    console.log("Selected ", topSearch.title);
+    return topSearch.title;
 }
